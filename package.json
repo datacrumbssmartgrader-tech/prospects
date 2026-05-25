@@ -1,8 +1,10 @@
 {
+  "type": "module",
   "name": "user-table",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "debug:prospects": "ts-node src/lib/debug-prospects.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -36,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "tsx": "^4.22.3",
     "typescript": "^5"
   }

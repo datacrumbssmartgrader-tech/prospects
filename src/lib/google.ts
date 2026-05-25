@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { getCanonicalStage } from "./stages.ts";
 
 export type Prospect = {
   id: string;
@@ -65,7 +66,8 @@ export async function fetchAllProspects(): Promise<Prospect[]> {
   // 2. Fetch data for all sheets
   for (const title of sheetTitles) {
     if (!title) continue;
-
+    console.log(`
+Processing sheet: "${title}"`);
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId,
@@ -78,12 +80,16 @@ export async function fetchAllProspects(): Promise<Prospect[]> {
       const headers = rows[0] as string[];
 
       // Identify column indices based on header names
-      const nameIdx = headers.findIndex((h) => h?.trim() === "Prospect Name");
-      const phoneIdx = headers.findIndex((h) => h?.trim() === "Phone Number");
-      const stageIdx = headers.findIndex((h) => h?.trim() === "Stage");
+      const nameIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "prospect name");
+      const phoneIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "number");
+      const stageIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "stage");
+
+      console.log(`  Headers found: ${JSON.stringify(headers)}`);
+      console.log(`  Column indexes - Name:${nameIdx}, Phone:${phoneIdx}, Stage:${stageIdx}`);
 
       // Skip sheet if it doesn't have the required columns
       if (nameIdx === -1 || phoneIdx === -1 || stageIdx === -1) {
+        console.warn(`  Skipping sheet "${title}" due to missing required columns.`);
         continue;
       }
 
@@ -95,14 +101,19 @@ export async function fetchAllProspects(): Promise<Prospect[]> {
         // Skip entirely empty rows
         if (!row || row.length === 0 || (!row[nameIdx] && !row[phoneIdx] && !row[stageIdx])) continue;
 
+        // Ensure row has same length as headers (fill missing cells with empty strings)
+        const paddedRow = [...row];
+        while (paddedRow.length < headers.length) paddedRow.push("");
+
         allProspects.push({
           id: `${title}-${i + 1}`, // unique ID
-          prospectName: row[nameIdx] || "",
-          phoneNumber: row[phoneIdx] || "",
-          stage: row[stageIdx] || "",
+          prospectName: paddedRow[nameIdx] || "",
+          phoneNumber: paddedRow[phoneIdx] || "",
+          stage: getCanonicalStage(paddedRow[stageIdx] || ""),
           sourceSheet: title,
           rowIndex: i + 1, // 1-based index in the actual sheet
         });
+        console.log(`    Added prospect ID ${title}-${i + 1} with stage "${paddedRow[stageIdx]}" (canonical: "${getCanonicalStage(paddedRow[stageIdx] || "")}")`);
       }
     } catch (error) {
       console.error(`Error fetching sheet ${title}:`, error);
@@ -110,13 +121,15 @@ export async function fetchAllProspects(): Promise<Prospect[]> {
     }
   }
 
+  console.log(`
+Total prospects collected: ${allProspects.length}`);
   return allProspects;
 }
 
 export async function updateProspectField(
   sourceSheet: string,
   rowIndex: number,
-  field: "Prospect Name" | "Phone Number" | "Stage",
+  field: "Prospect Name" | "Number" | "stage",
   newValue: string
 ) {
   const sheets = getSheetsClient();
@@ -186,9 +199,9 @@ export async function addProspect(
         const headers = response.data.values?.[0] as string[];
         if (!headers) continue;
 
-        const nameIdx = headers.findIndex((h) => h?.trim() === "Prospect Name");
-        const phoneIdx = headers.findIndex((h) => h?.trim() === "Phone Number");
-        const stageIdx = headers.findIndex((h) => h?.trim() === "Stage");
+        const nameIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "prospect name");
+        const phoneIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "number");
+        const stageIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "stage");
 
         if (nameIdx !== -1 && phoneIdx !== -1 && stageIdx !== -1) {
           sheetTitle = title;
@@ -201,7 +214,7 @@ export async function addProspect(
   }
 
   if (!sheetTitle) {
-    throw new Error("No sheet found with the required headers (Prospect Name, Phone Number, Stage).");
+    throw new Error("No sheet found with the required headers (Prospect Name, Number, stage).");
   }
 
   // Get the headers for the selected sheet to know the correct column positions
@@ -212,12 +225,12 @@ export async function addProspect(
   const headers = headerResponse.data.values?.[0] as string[];
   if (!headers) throw new Error("Could not fetch headers for the target sheet.");
 
-  const nameIdx = headers.findIndex((h) => h?.trim() === "Prospect Name");
-  const phoneIdx = headers.findIndex((h) => h?.trim() === "Phone Number");
-  const stageIdx = headers.findIndex((h) => h?.trim() === "Stage");
+  const nameIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "prospect name");
+  const phoneIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "number");
+  const stageIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "stage");
 
   if (nameIdx === -1 || phoneIdx === -1 || stageIdx === -1) {
-    throw new Error(`The target sheet "${sheetTitle}" is missing some required headers.`);
+    throw new Error(`The target sheet "${sheetTitle}" is missing required headers (Prospect Name, Number, stage).`);
   }
 
   // Construct the row array based on column indices
@@ -252,7 +265,7 @@ export async function addProspect(
     id: `${sheetTitle}-${rowIndex}`,
     prospectName: prospect.prospectName,
     phoneNumber: prospect.phoneNumber,
-    stage: prospect.stage,
+    stage: getCanonicalStage(prospect.stage),
     sourceSheet: sheetTitle,
     rowIndex,
   };

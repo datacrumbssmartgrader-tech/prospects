@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Prospect } from "@/lib/google";
+import { STAGES, getCanonicalStage } from "@/lib/stages";
 import { Search, Loader2 } from "lucide-react";
 
 export function ProspectsTable() {
@@ -46,7 +47,7 @@ export function ProspectsTable() {
   // New prospect field states
   const [newProspectName, setNewProspectName] = useState("");
   const [newPhoneNumber, setNewPhoneNumber] = useState("");
-  const [newStage, setNewStage] = useState("Lead");
+  const [newStage, setNewStage] = useState("Contacted");
   const [newSourceSheet, setNewSourceSheet] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,7 +66,7 @@ export function ProspectsTable() {
   const clearForm = () => {
     setNewProspectName("");
     setNewPhoneNumber("");
-    setNewStage("Lead");
+    setNewStage("Contacted");
     if (sheets.length > 0) {
       setNewSourceSheet(sheets[0]);
     }
@@ -221,7 +222,7 @@ export function ProspectsTable() {
         accessorKey: "stage",
         header: "Stage",
         cell: ({ row, getValue }) => {
-          const initialValue = getValue() as string;
+          const initialValue = getCanonicalStage(getValue() as string);
           return (
             <Select
               value={initialValue}
@@ -233,11 +234,11 @@ export function ProspectsTable() {
                 <SelectValue placeholder="Select Stage" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Lead">Lead</SelectItem>
-                <SelectItem value="Interested">Interested</SelectItem>
-                <SelectItem value="Negotiating">Negotiating</SelectItem>
-                <SelectItem value="Closed Won">Closed Won</SelectItem>
-                <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+                {STAGES.map((stage) => (
+                  <SelectItem key={stage} value={stage}>
+                    {stage}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           );
@@ -312,11 +313,11 @@ export function ProspectsTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Lead">Lead</SelectItem>
-                <SelectItem value="Interested">Interested</SelectItem>
-                <SelectItem value="Negotiating">Negotiating</SelectItem>
-                <SelectItem value="Closed Won">Closed Won</SelectItem>
-                <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+                {STAGES.map((stage) => (
+                  <SelectItem key={stage} value={stage}>
+                    {stage}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -356,16 +357,16 @@ export function ProspectsTable() {
 
              <div className="space-y-1">
               <label className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Stage</label>
-              <Select value={newStage} onValueChange={(val) => setNewStage(val || "Lead")}>
+              <Select value={newStage} onValueChange={(val) => setNewStage(val || "Contacted")}>
                 <SelectTrigger className="h-9 w-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
                   <SelectValue placeholder="Select Stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Lead">Lead</SelectItem>
-                  <SelectItem value="Interested">Interested</SelectItem>
-                  <SelectItem value="Negotiating">Negotiating</SelectItem>
-                  <SelectItem value="Closed Won">Closed Won</SelectItem>
-                  <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+                  {STAGES.map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {stage}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

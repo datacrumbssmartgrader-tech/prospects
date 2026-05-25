@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       {
         prospectName,
         phoneNumber: phoneNumber || "",
-        stage: stage || "Lead",
+        stage: stage || "Contacted",
       },
       sourceSheet
     );

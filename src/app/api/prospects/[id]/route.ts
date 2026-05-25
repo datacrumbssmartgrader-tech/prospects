@@ -26,10 +26,10 @@ export async function PATCH(
       await updateProspectField(sourceSheet, rowIndex, "Prospect Name", prospectName);
     }
     if (phoneNumber !== undefined) {
-      await updateProspectField(sourceSheet, rowIndex, "Phone Number", phoneNumber);
+      await updateProspectField(sourceSheet, rowIndex, "Number", phoneNumber);
     }
     if (stage !== undefined) {
-      await updateProspectField(sourceSheet, rowIndex, "Stage", stage);
+      await updateProspectField(sourceSheet, rowIndex, "stage", stage);
     }
 
     return NextResponse.json({ success: true });
