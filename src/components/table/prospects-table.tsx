@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Prospect } from "@/lib/google";
-import { STAGES, getCanonicalStage } from "@/lib/stages";
+import { getCanonicalStage } from "@/lib/stages";
 import { Search, Loader2 } from "lucide-react";
 
 export function ProspectsTable() {
@@ -47,13 +47,27 @@ export function ProspectsTable() {
   // New prospect field states
   const [newProspectName, setNewProspectName] = useState("");
   const [newPhoneNumber, setNewPhoneNumber] = useState("");
-  const [newStage, setNewStage] = useState("Contacted");
+  const [newStage, setNewStage] = useState("");
   const [newSourceSheet, setNewSourceSheet] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Extract unique sheets from current prospects data
   const sheets = useMemo(() => {
     return Array.from(new Set(data.map((p) => p.sourceSheet).filter(Boolean)));
+  }, [data]);
+
+  // Derive unique stages dynamically from loaded data
+  const uniqueStages = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const p of data) {
+      const s = getCanonicalStage(p.stage);
+      if (s && !seen.has(s)) {
+        seen.add(s);
+        result.push(s);
+      }
+    }
+    return result.sort();
   }, [data]);
 
   // Set default sheet once sheets load
@@ -63,10 +77,17 @@ export function ProspectsTable() {
     }
   }, [sheets, newSourceSheet]);
 
+  // Set default stage once stages load
+  useEffect(() => {
+    if (uniqueStages.length > 0 && !newStage) {
+      setNewStage(uniqueStages[0]);
+    }
+  }, [uniqueStages, newStage]);
+
   const clearForm = () => {
     setNewProspectName("");
     setNewPhoneNumber("");
-    setNewStage("Contacted");
+    setNewStage(uniqueStages[0] ?? "");
     if (sheets.length > 0) {
       setNewSourceSheet(sheets[0]);
     }
@@ -234,7 +255,7 @@ export function ProspectsTable() {
                 <SelectValue placeholder="Select Stage" />
               </SelectTrigger>
               <SelectContent>
-                {STAGES.map((stage) => (
+                {uniqueStages.map((stage) => (
                   <SelectItem key={stage} value={stage}>
                     {stage}
                   </SelectItem>
@@ -252,7 +273,7 @@ export function ProspectsTable() {
         ),
       },
     ],
-    []
+    [uniqueStages]
   );
 
   const table = useReactTable({
@@ -313,7 +334,7 @@ export function ProspectsTable() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
-                {STAGES.map((stage) => (
+                {uniqueStages.map((stage) => (
                   <SelectItem key={stage} value={stage}>
                     {stage}
                   </SelectItem>
@@ -362,7 +383,7 @@ export function ProspectsTable() {
                   <SelectValue placeholder="Select Stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  {STAGES.map((stage) => (
+                  {uniqueStages.map((stage) => (
                     <SelectItem key={stage} value={stage}>
                       {stage}
                     </SelectItem>
