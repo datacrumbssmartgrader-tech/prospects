@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { getCanonicalStage } from "./stages.ts";
+import { getCanonicalStage } from "./stages";
 
 export type Prospect = {
   id: string;

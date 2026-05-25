@@ -2,9 +2,9 @@
 // This script fetches all prospects and prints a summary of which canonical stages are present.
 // It also validates that the four problematic stages have at least one prospect.
 
-import { fetchAllProspects } from "./google.ts";
-import { STAGES } from "./stages.ts";
-import { getCanonicalStage } from "./stages.ts";
+import { fetchAllProspects } from "./google";
+import { STAGES } from "./stages";
+import { getCanonicalStage } from "./stages";
 
 async function main() {
   const prospects = await fetchAllProspects();

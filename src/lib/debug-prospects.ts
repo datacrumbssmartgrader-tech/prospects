@@ -1,4 +1,4 @@
-import { fetchAllProspects } from "./google.ts";
+import { fetchAllProspects } from "./google";
 import dotenv from "dotenv";
 
 dotenv.config({ path: "./.env" });
