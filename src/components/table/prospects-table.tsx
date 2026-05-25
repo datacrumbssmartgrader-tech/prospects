@@ -300,7 +300,7 @@ export function ProspectsTable() {
     },
     initialState: {
       pagination: {
-        pageSize: 12,
+        pageSize: 100,
       },
     },
   });
