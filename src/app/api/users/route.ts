@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
-import { getUsers, findUserByUsername, createUser } from "@/lib/db";
+import { getUsers, findUserByEmail, createUser } from "@/lib/db";
 import bcrypt from "bcryptjs";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -35,30 +37,35 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { username, password, role } = body as {
-      username: string;
+    const { email, password, role, avatarUrl } = body as {
+      email: string;
       password: string;
       role: "admin" | "user";
+      avatarUrl?: string;
     };
 
-    if (!username?.trim() || !password || !role) {
+    if (!email?.trim() || !password || !role) {
       return NextResponse.json(
-        { error: "username, password, and role are required" },
+        { error: "email, password, and role are required" },
         { status: 400 }
       );
+    }
+
+    if (!EMAIL_RE.test(email.trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     if (!["admin", "user"].includes(role)) {
       return NextResponse.json({ error: "role must be 'admin' or 'user'" }, { status: 400 });
     }
 
-    const existing = await findUserByUsername(username.trim());
+    const existing = await findUserByEmail(email.trim().toLowerCase());
     if (existing) {
-      return NextResponse.json({ error: "Username already exists" }, { status: 409 });
+      return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    await createUser(username.trim(), passwordHash, role);
+    await createUser(email.trim().toLowerCase(), passwordHash, role, avatarUrl);
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

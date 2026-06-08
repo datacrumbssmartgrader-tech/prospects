@@ -22,7 +22,7 @@ export async function proxy(request: NextRequest) {
   if (
     verifiedSession &&
     pathname.startsWith('/admin') &&
-    (verifiedSession as any).role !== 'admin'
+    (verifiedSession as any).role !== "admin"
   ) {
     return NextResponse.redirect(new URL('/prospects', request.url));
   }

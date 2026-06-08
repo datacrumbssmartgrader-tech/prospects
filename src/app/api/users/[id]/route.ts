@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
-import { updateUserRole, updateUserPassword, updateUsername, deleteUser, findUserByUsername } from "@/lib/db";
+import {
+  updateUserRole,
+  updateUserPassword,
+  updateUserEmail,
+  updateUserAvatar,
+  deleteUser,
+  findUserByEmail,
+} from "@/lib/db";
 import bcrypt from "bcryptjs";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -25,20 +34,24 @@ export async function PATCH(
     const { id } = await params;
     const userId = parseInt(id, 10);
     const body = await request.json();
-    const { username, role, password } = body as {
-      username?: string;
+    const { email, role, password, avatarUrl } = body as {
+      email?: string;
       role?: "admin" | "user";
       password?: string;
+      avatarUrl?: string;
     };
 
-    if (username !== undefined) {
-      const trimmed = username.trim();
-      if (!trimmed) return NextResponse.json({ error: "Username cannot be empty" }, { status: 400 });
-      const existing = await findUserByUsername(trimmed);
-      if (existing && existing.id !== userId) {
-        return NextResponse.json({ error: "Username already taken" }, { status: 409 });
+    if (email !== undefined) {
+      const trimmed = email.trim().toLowerCase();
+      if (!trimmed) return NextResponse.json({ error: "Email cannot be empty" }, { status: 400 });
+      if (!EMAIL_RE.test(trimmed)) {
+        return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
       }
-      await updateUsername(userId, trimmed);
+      const existing = await findUserByEmail(trimmed);
+      if (existing && existing.id !== userId) {
+        return NextResponse.json({ error: "Email already taken" }, { status: 409 });
+      }
+      await updateUserEmail(userId, trimmed);
     }
 
     if (role) {
@@ -54,6 +67,10 @@ export async function PATCH(
       }
       const hash = await bcrypt.hash(password, 10);
       await updateUserPassword(userId, hash);
+    }
+
+    if (avatarUrl !== undefined) {
+      await updateUserAvatar(userId, avatarUrl);
     }
 
     return NextResponse.json({ success: true });

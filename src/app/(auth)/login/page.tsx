@@ -1,31 +1,44 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { encrypt } from "@/lib/auth";
-import { findUserByUsername } from "@/lib/db";
+import { findUserByEmail } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import bcrypt from "bcryptjs";
 
-export default function LoginPage() {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+
   async function login(formData: FormData) {
     "use server";
 
-    const username = (formData.get("username") as string).trim();
+    const email = (formData.get("email") as string).trim().toLowerCase();
     const password = formData.get("password") as string;
+
+    if (!EMAIL_RE.test(email)) {
+      redirect("/login?error=Invalid email address");
+    }
 
     let role: "admin" | "user" | null = null;
 
     // Check the hardcoded env-var admin first
     if (
-      username === process.env.APP_USERNAME &&
+      email === process.env.APP_EMAIL?.toLowerCase() &&
       password === process.env.APP_PASSWORD
     ) {
       role = "admin";
     } else {
       // Fall back to NeonDB users
       try {
-        const dbUser = await findUserByUsername(username);
+        const dbUser = await findUserByEmail(email);
         if (dbUser && (await bcrypt.compare(password, dbUser.password_hash))) {
           role = dbUser.role;
         }
@@ -38,7 +51,7 @@ export default function LoginPage() {
       redirect("/login?error=Invalid credentials");
     }
 
-    const session = await encrypt({ username, role });
+    const session = await encrypt({ email, role });
     const cookieStore = await cookies();
     cookieStore.set("session", session, {
       httpOnly: true,
@@ -62,18 +75,24 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-950/50 border border-red-800 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
         <form action={login} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-zinc-300">
-              Username
+            <Label htmlFor="email" className="text-zinc-300">
+              Email
             </Label>
             <Input
-              id="username"
-              name="username"
-              type="text"
+              id="email"
+              name="email"
+              type="email"
               required
               className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-zinc-700"
-              placeholder="username"
+              placeholder="you@example.com"
             />
           </div>
           <div className="space-y-2">
@@ -89,12 +108,22 @@ export default function LoginPage() {
               placeholder="••••••••"
             />
           </div>
+
           <Button
             type="submit"
-            className="w-full bg-white text-zinc-950 hover:bg-zinc-200 mt-4 font-medium"
+            className="w-full bg-white text-zinc-950 hover:bg-zinc-200 mt-4 font-medium cursor-pointer"
           >
             Sign in
           </Button>
+
+          <div className="text-center">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </form>
       </div>
     </div>

@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const session = cookieStore.get("session")?.value;
   const payload = await decrypt(session);
-  const username = (payload as any)?.username as string | undefined;
+  const email = (payload as any)?.email as string | undefined;
   const role = (payload as any)?.role as string | undefined;
 
   async function logout() {
@@ -29,7 +29,7 @@ export default async function DashboardLayout({
       <header className="border-b bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/prospects" className="flex items-center gap-2">
+            <Link href="/prospects" className="flex items-center gap-2 cursor-pointer">
               <Image
                 src="/LOGO.png"
                 alt="Cognos CRM"
@@ -38,23 +38,26 @@ export default async function DashboardLayout({
                 className="h-8 w-auto object-contain"
                 priority
               />
+              <span className="font-semibold text-sm text-zinc-800 dark:text-zinc-100 hidden sm:block">
+                Cognos CRM
+              </span>
             </Link>
-            <Link href="/prospects">
+            <Link href="/prospects" className="cursor-pointer">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium"
+                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
               >
                 <Home className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
                 Home
               </Button>
             </Link>
             {role === "admin" && (
-              <Link href="/admin">
+              <Link href="/admin" className="cursor-pointer">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium"
+                  className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
                 >
                   <Users className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
                   Accounts
@@ -64,9 +67,9 @@ export default async function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            {username && (
+            {email && (
               <span className="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:block">
-                {username}
+                {email}
               </span>
             )}
             <form action={logout}>
@@ -74,7 +77,7 @@ export default async function DashboardLayout({
                 type="submit"
                 variant="ghost"
                 size="sm"
-                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium"
+                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
               >
                 <LogOut className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
                 Logout
