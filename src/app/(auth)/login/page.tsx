@@ -14,9 +14,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; success?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, success } = await searchParams;
 
   async function login(formData: FormData) {
     "use server";
@@ -78,6 +78,11 @@ export default async function LoginPage({
           </p>
         </div>
 
+        {success && (
+          <div className="mb-4 rounded-lg bg-green-950/50 border border-green-800 px-4 py-3 text-sm text-green-400">
+            {success}
+          </div>
+        )}
         {error && (
           <div className="mb-4 rounded-lg bg-red-950/50 border border-red-800 px-4 py-3 text-sm text-red-400">
             {error}

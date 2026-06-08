@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div className="space-y-4 text-center">
             <div className="rounded-lg bg-green-950/50 border border-green-800 px-4 py-3 text-sm text-green-400">
-              If that email is registered, a reset link has been sent.
+              A reset link has been sent to your email.
             </div>
             <Link
               href="/login"

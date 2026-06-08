@@ -43,7 +43,7 @@ function ResetPasswordForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to reset password");
-      router.push("/login?error=Password+updated.+Please+sign+in.");
+      router.push("/login?success=Password+updated.+Please+sign+in.");
     } catch (err: any) {
       setError(err.message);
     } finally {
