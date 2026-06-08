@@ -6,9 +6,10 @@ export async function proxy(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   const verifiedSession = await decrypt(session);
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login');
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/prospects');
-  
+  const { pathname } = request.nextUrl;
+  const isAuthPage = pathname.startsWith('/login');
+  const isDashboardPage = pathname.startsWith('/prospects') || pathname.startsWith('/admin');
+
   if (!verifiedSession && isDashboardPage) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -17,7 +18,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/prospects', request.url));
   }
 
-  if (request.nextUrl.pathname === '/') {
+  // Admin-only guard
+  if (
+    verifiedSession &&
+    pathname.startsWith('/admin') &&
+    (verifiedSession as any).role !== 'admin'
+  ) {
+    return NextResponse.redirect(new URL('/prospects', request.url));
+  }
+
+  if (pathname === '/') {
     if (verifiedSession) {
       return NextResponse.redirect(new URL('/prospects', request.url));
     } else {

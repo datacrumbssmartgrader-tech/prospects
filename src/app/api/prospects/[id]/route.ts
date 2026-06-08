@@ -16,12 +16,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const username = (verified as any).username as string;
+
     const { id } = await params;
+    void id;
+
     const body = await request.json();
+    const { prospectName, phoneNumber, stage, comments, sourceSheet, rowIndex } = body;
 
-    const { prospectName, phoneNumber, stage, sourceSheet, rowIndex } = body;
-
-    // We only update what was passed
     if (prospectName !== undefined) {
       await updateProspectField(sourceSheet, rowIndex, "Prospect Name", prospectName);
     }
@@ -30,6 +32,10 @@ export async function PATCH(
     }
     if (stage !== undefined) {
       await updateProspectField(sourceSheet, rowIndex, "stage", stage);
+    }
+    if (comments !== undefined) {
+      await updateProspectField(sourceSheet, rowIndex, "Comments", comments);
+      await updateProspectField(sourceSheet, rowIndex, "Comment By", username ?? "");
     }
 
     return NextResponse.json({ success: true });

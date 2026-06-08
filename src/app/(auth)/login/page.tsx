@@ -1,36 +1,53 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { encrypt } from "@/lib/auth";
+import { findUserByUsername } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import bcrypt from "bcryptjs";
 
 export default function LoginPage() {
   async function login(formData: FormData) {
     "use server";
 
-    const username = formData.get("username") as string;
+    const username = (formData.get("username") as string).trim();
     const password = formData.get("password") as string;
 
+    let role: "admin" | "user" | null = null;
+
+    // Check the hardcoded env-var admin first
     if (
       username === process.env.APP_USERNAME &&
       password === process.env.APP_PASSWORD
     ) {
-      const session = await encrypt({ user: username });
-      const cookieStore = await cookies();
-      cookieStore.set("session", session, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        path: "/",
-      });
-
-      redirect("/prospects");
+      role = "admin";
     } else {
-      // In a real app we'd handle the error more gracefully.
-      // For this simple internal tool, we can throw or redirect back.
+      // Fall back to NeonDB users
+      try {
+        const dbUser = await findUserByUsername(username);
+        if (dbUser && (await bcrypt.compare(password, dbUser.password_hash))) {
+          role = dbUser.role;
+        }
+      } catch {
+        // If DB is unavailable, fall through to invalid credentials
+      }
+    }
+
+    if (!role) {
       redirect("/login?error=Invalid credentials");
     }
+
+    const session = await encrypt({ username, role });
+    const cookieStore = await cookies();
+    cookieStore.set("session", session, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: "/",
+    });
+
+    redirect("/prospects");
   }
 
   return (
@@ -38,7 +55,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-2xl backdrop-blur-sm">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Welcome to Prospects
+            Welcome to Cognos CRM
           </h1>
           <p className="text-sm text-zinc-400 mt-2">
             Enter your credentials to continue
@@ -56,7 +73,7 @@ export default function LoginPage() {
               type="text"
               required
               className="bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-zinc-700"
-              placeholder="admin"
+              placeholder="username"
             />
           </div>
           <div className="space-y-2">

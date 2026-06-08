@@ -34,6 +34,8 @@ import { Prospect } from "@/lib/google";
 import { getCanonicalStage } from "@/lib/stages";
 import { Search, Loader2 } from "lucide-react";
 
+const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID ?? "";
+
 export function ProspectsTable() {
   const [data, setData] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,22 +43,17 @@ export function ProspectsTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  // Form visibility state
   const [isAdding, setIsAdding] = useState(false);
-  
-  // New prospect field states
   const [newProspectName, setNewProspectName] = useState("");
   const [newPhoneNumber, setNewPhoneNumber] = useState("");
   const [newStage, setNewStage] = useState("");
   const [newSourceSheet, setNewSourceSheet] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Extract unique sheets from current prospects data
   const sheets = useMemo(() => {
     return Array.from(new Set(data.map((p) => p.sourceSheet).filter(Boolean)));
   }, [data]);
 
-  // Derive unique stages dynamically from loaded data
   const uniqueStages = useMemo(() => {
     const seen = new Set<string>();
     const result: string[] = [];
@@ -70,14 +67,12 @@ export function ProspectsTable() {
     return result.sort();
   }, [data]);
 
-  // Set default sheet once sheets load
   useEffect(() => {
     if (sheets.length > 0 && !newSourceSheet) {
       setNewSourceSheet(sheets[0]);
     }
   }, [sheets, newSourceSheet]);
 
-  // Set default stage once stages load
   useEffect(() => {
     if (uniqueStages.length > 0 && !newStage) {
       setNewStage(uniqueStages[0]);
@@ -118,8 +113,6 @@ export function ProspectsTable() {
       }
 
       const newProspect = await res.json();
-      
-      // Update local state by appending new prospect
       setData((old) => [...old, newProspect]);
       toast.success("Prospect added successfully!");
       setIsAdding(false);
@@ -139,7 +132,7 @@ export function ProspectsTable() {
       if (!res.ok) throw new Error("Failed to fetch");
       const json = await res.json();
       setData(json);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load prospects");
     } finally {
       setLoading(false);
@@ -157,16 +150,11 @@ export function ProspectsTable() {
     originalRow: Prospect
   ) => {
     const originalValue = (originalRow as any)[field];
-    if (originalValue === value) return; // no change
+    if (originalValue === value) return;
 
     // Optimistic update
     setData((old) =>
-      old.map((row) => {
-        if (row.id === id) {
-          return { ...row, [field]: value };
-        }
-        return row;
-      })
+      old.map((row) => (row.id === id ? { ...row, [field]: value } : row))
     );
 
     const promise = fetch(`/api/prospects/${id}`, {
@@ -185,14 +173,8 @@ export function ProspectsTable() {
       loading: "Saving...",
       success: "Row updated successfully!",
       error: () => {
-        // Revert on error
         setData((old) =>
-          old.map((row) => {
-            if (row.id === id) {
-              return { ...row, [field]: originalValue };
-            }
-            return row;
-          })
+          old.map((row) => (row.id === id ? { ...row, [field]: originalValue } : row))
         );
         return "Failed to save update";
       },
@@ -206,7 +188,11 @@ export function ProspectsTable() {
         header: "S.No",
         cell: ({ row, table }) => {
           const globalIndex = table.getFilteredRowModel().flatRows.indexOf(row) + 1;
-          return <span className="font-mono text-zinc-400 dark:text-zinc-500 text-xs">{globalIndex}</span>;
+          return (
+            <span className="font-mono text-zinc-400 dark:text-zinc-500 text-xs">
+              {globalIndex}
+            </span>
+          );
         },
       },
       {
@@ -266,10 +252,40 @@ export function ProspectsTable() {
         },
       },
       {
+        accessorKey: "comments",
+        header: "Comments",
+        cell: ({ row, getValue }) => {
+          const initialValue = getValue() as string;
+          return (
+            <div className="min-w-[180px]">
+              <EditableCell
+                initialValue={initialValue}
+                placeholder="Add comment..."
+                onSave={(val) =>
+                  updateData(row.original.id, "comments", val, row.original)
+                }
+              />
+              {row.original.commentBy && (
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 px-2">
+                  by {row.original.commentBy}
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: "sourceSheet",
         header: "Source",
         cell: ({ row }) => (
-          <span className="text-zinc-500 text-sm">{row.original.sourceSheet}</span>
+          <a
+            href={`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${row.original.sheetGid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline text-sm whitespace-nowrap"
+          >
+            {row.original.sourceSheet}
+          </a>
         ),
       },
     ],
@@ -365,7 +381,7 @@ export function ProspectsTable() {
                 className="h-9 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
               />
             </div>
-            
+
             <div className="space-y-1">
               <label className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Phone Number</label>
               <Input
@@ -376,7 +392,7 @@ export function ProspectsTable() {
               />
             </div>
 
-             <div className="space-y-1">
+            <div className="space-y-1">
               <label className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Stage</label>
               <Select value={newStage} onValueChange={(val) => setNewStage(val || "Contacted")}>
                 <SelectTrigger className="h-9 w-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
@@ -450,18 +466,15 @@ export function ProspectsTable() {
                 {headerGroup.headers.map((header) => {
                   const isSerial = header.column.id === "serialNumber";
                   return (
-                    <TableHead 
-                      key={header.id} 
+                    <TableHead
+                      key={header.id}
                       className={`font-medium text-zinc-500 dark:text-zinc-400 ${
                         isSerial ? "print:hidden w-16 text-center" : ""
                       }`}
                     >
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -484,16 +497,15 @@ export function ProspectsTable() {
                   {row.getVisibleCells().map((cell) => {
                     const isSerial = cell.column.id === "serialNumber";
                     return (
-                      <TableCell 
-                        key={cell.id} 
+                      <TableCell
+                        key={cell.id}
                         className={`p-2 ${
-                          isSerial ? "print:hidden text-center text-zinc-400 dark:text-zinc-500 font-mono text-xs w-16" : ""
+                          isSerial
+                            ? "print:hidden text-center text-zinc-400 dark:text-zinc-500 font-mono text-xs w-16"
+                            : ""
                         }`}
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}
@@ -540,9 +552,11 @@ export function ProspectsTable() {
 function EditableCell({
   initialValue,
   onSave,
+  placeholder = "Empty",
 }: {
   initialValue: string;
   onSave: (val: string) => void;
+  placeholder?: string;
 }) {
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
@@ -586,7 +600,7 @@ function EditableCell({
       onClick={() => setIsEditing(true)}
       className="cursor-text px-2 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors min-h-[32px] flex items-center"
     >
-      {value || <span className="text-zinc-400 italic">Empty</span>}
+      {value || <span className="text-zinc-400 italic">{placeholder}</span>}
     </div>
   );
 }
