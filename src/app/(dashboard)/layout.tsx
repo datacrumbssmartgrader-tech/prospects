@@ -31,7 +31,7 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-4">
             <Link href="/prospects" className="flex items-center gap-2">
               <Image
-                src="/LOGO.webp"
+                src="/LOGO.png"
                 alt="Cognos CRM"
                 width={80}
                 height={32}
