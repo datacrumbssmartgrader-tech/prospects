@@ -14,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prospects",
+  title: "Cognos CRM",
   description: "Internal Prospect Management",
+  icons: {
+    icon: "/LOGO.webp",
+    apple: "/LOGO.webp",
+  },
 };
 
 export default function RootLayout({
