@@ -1,6 +1,13 @@
 import { ProspectsTable } from "@/components/table/prospects-table";
+import { cookies } from "next/headers";
+import { decrypt } from "@/lib/auth";
 
-export default function ProspectsPage() {
+export default async function ProspectsPage() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get("session")?.value;
+  const payload = await decrypt(session);
+  const currentUser = (payload as any)?.username as string ?? "";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
@@ -9,8 +16,8 @@ export default function ProspectsPage() {
           Manage and edit your prospect data synchronized directly with Google Sheets.
         </p>
       </div>
-      
-      <ProspectsTable />
+
+      <ProspectsTable currentUser={currentUser} />
     </div>
   );
 }

@@ -36,7 +36,7 @@ import { Search, Loader2 } from "lucide-react";
 
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID ?? "";
 
-export function ProspectsTable() {
+export function ProspectsTable({ currentUser }: { currentUser: string }) {
   const [data, setData] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -152,9 +152,14 @@ export function ProspectsTable() {
     const originalValue = (originalRow as any)[field];
     if (originalValue === value) return;
 
-    // Optimistic update
+    // Optimistic update — also set commentBy immediately when saving a comment
     setData((old) =>
-      old.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+      old.map((row) => {
+        if (row.id !== id) return row;
+        const update: Partial<Prospect> = { [field]: value };
+        if (field === "comments") update.commentBy = currentUser;
+        return { ...row, ...update };
+      })
     );
 
     const promise = fetch(`/api/prospects/${id}`, {
@@ -174,7 +179,12 @@ export function ProspectsTable() {
       success: "Row updated successfully!",
       error: () => {
         setData((old) =>
-          old.map((row) => (row.id === id ? { ...row, [field]: originalValue } : row))
+          old.map((row) => {
+            if (row.id !== id) return row;
+            const revert: Partial<Prospect> = { [field]: originalValue };
+            if (field === "comments") revert.commentBy = originalRow.commentBy;
+            return { ...row, ...revert };
+          })
         );
         return "Failed to save update";
       },
