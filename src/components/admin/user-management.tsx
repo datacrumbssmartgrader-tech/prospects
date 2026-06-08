@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AvatarCircle } from "@/components/ui/avatar-circle";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 type AppUser = {
   id: number;
   email: string;
+  username: string | null;
   role: "admin" | "user";
   avatar_url: string | null;
   created_at: string;
@@ -33,44 +35,13 @@ type AppUser = {
 
 type EditState = {
   email: string;
+  username: string;
   role: "admin" | "user";
   password: string;
   avatarUrl: string | null;
   avatarPreview: string | null;
   saving: boolean;
 };
-
-function AvatarCircle({
-  src,
-  email,
-  size = 32,
-}: {
-  src?: string | null;
-  email?: string;
-  size?: number;
-}) {
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={email ?? "avatar"}
-        width={size}
-        height={size}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
-      />
-    );
-  }
-  const initial = email?.[0]?.toUpperCase() ?? "?";
-  return (
-    <div
-      className="rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 font-semibold shrink-0"
-      style={{ width: size, height: size, fontSize: size * 0.4 }}
-    >
-      {initial}
-    </div>
-  );
-}
 
 function AvatarUpload({
   value,
@@ -93,7 +64,6 @@ function AvatarUpload({
       toast.error("Image must be under 2 MB");
       return;
     }
-
     const localPreview = URL.createObjectURL(file);
     setUploading(true);
     try {
@@ -153,16 +123,17 @@ export function UserManagement() {
 
   // Create form
   const [newEmail, setNewEmail] = useState("");
+  const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "user">("user");
   const [newAvatarUrl, setNewAvatarUrl] = useState<string | null>(null);
   const [newAvatarPreview, setNewAvatarPreview] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Edit state: keyed by user id
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editState, setEditState] = useState<EditState>({
     email: "",
+    username: "",
     role: "user",
     password: "",
     avatarUrl: null,
@@ -170,7 +141,6 @@ export function UserManagement() {
     saving: false,
   });
 
-  // Delete confirm
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchUsers = async () => {
@@ -207,6 +177,7 @@ export function UserManagement() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: newEmail.trim().toLowerCase(),
+          username: newUsername.trim() || null,
           password: newPassword,
           role: newRole,
           avatarUrl: newAvatarUrl,
@@ -214,8 +185,9 @@ export function UserManagement() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create user");
-      toast.success(`Account "${newEmail.trim()}" created`);
+      toast.success(`Account "${newUsername.trim() || newEmail.trim()}" created`);
       setNewEmail("");
+      setNewUsername("");
       setNewPassword("");
       setNewRole("user");
       setNewAvatarUrl(null);
@@ -232,6 +204,7 @@ export function UserManagement() {
     setEditingId(user.id);
     setEditState({
       email: user.email,
+      username: user.username ?? "",
       role: user.role,
       password: "",
       avatarUrl: user.avatar_url,
@@ -242,7 +215,7 @@ export function UserManagement() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditState({ email: "", role: "user", password: "", avatarUrl: null, avatarPreview: null, saving: false });
+    setEditState({ email: "", username: "", role: "user", password: "", avatarUrl: null, avatarPreview: null, saving: false });
   };
 
   const saveEdit = async (userId: number) => {
@@ -254,6 +227,7 @@ export function UserManagement() {
     try {
       const body: Record<string, unknown> = {
         email: editState.email.trim().toLowerCase(),
+        username: editState.username.trim() || null,
         role: editState.role,
       };
       if (editState.password) body.password = editState.password;
@@ -299,7 +273,7 @@ export function UserManagement() {
           Create New Account
         </h3>
         <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
               <label className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Email *</label>
               <Input
@@ -307,6 +281,16 @@ export function UserManagement() {
                 placeholder="user@example.com"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
+                className="h-9 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Username</label>
+              <Input
+                type="text"
+                placeholder="display name"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
                 className="h-9 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
               />
             </div>
@@ -366,15 +350,14 @@ export function UserManagement() {
       {/* Users table */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
-          <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            Existing Accounts
-          </h3>
+          <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Existing Accounts</h3>
         </div>
         <Table>
           <TableHeader>
             <TableRow className="bg-zinc-50/50 dark:bg-zinc-900/30">
-              <TableHead className="font-medium text-zinc-500 dark:text-zinc-400 w-10" />
+              <TableHead className="w-10" />
               <TableHead className="font-medium text-zinc-500 dark:text-zinc-400">Email</TableHead>
+              <TableHead className="font-medium text-zinc-500 dark:text-zinc-400">Username</TableHead>
               <TableHead className="font-medium text-zinc-500 dark:text-zinc-400">Role</TableHead>
               <TableHead className="font-medium text-zinc-500 dark:text-zinc-400">New Password</TableHead>
               <TableHead className="font-medium text-zinc-500 dark:text-zinc-400 hidden sm:table-cell">Created</TableHead>
@@ -384,7 +367,7 @@ export function UserManagement() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <div className="flex items-center justify-center text-zinc-500">
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
                     Loading...
@@ -393,7 +376,7 @@ export function UserManagement() {
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-zinc-500">
+                <TableCell colSpan={7} className="h-32 text-center text-zinc-500">
                   No accounts created yet.
                 </TableCell>
               </TableRow>
@@ -415,7 +398,7 @@ export function UserManagement() {
                           }
                         />
                       ) : (
-                        <AvatarCircle src={u.avatar_url} email={u.email} size={32} />
+                        <AvatarCircle src={u.avatar_url} name={u.username ?? u.email} size={32} />
                       )}
                     </TableCell>
 
@@ -425,13 +408,26 @@ export function UserManagement() {
                         <Input
                           type="email"
                           value={editState.email}
-                          onChange={(e) =>
-                            setEditState((s) => ({ ...s, email: e.target.value }))
-                          }
-                          className="h-8 w-52 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700 text-sm"
+                          onChange={(e) => setEditState((s) => ({ ...s, email: e.target.value }))}
+                          className="h-8 w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700 text-sm"
                         />
                       ) : (
                         u.email
+                      )}
+                    </TableCell>
+
+                    {/* Username */}
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">
+                      {isEditing ? (
+                        <Input
+                          type="text"
+                          value={editState.username}
+                          placeholder="display name"
+                          onChange={(e) => setEditState((s) => ({ ...s, username: e.target.value }))}
+                          className="h-8 w-32 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700 text-sm"
+                        />
+                      ) : (
+                        <span className="text-sm">{u.username ?? <span className="text-zinc-400 italic text-xs">—</span>}</span>
                       )}
                     </TableCell>
 
@@ -440,9 +436,7 @@ export function UserManagement() {
                       {isEditing ? (
                         <Select
                           value={editState.role}
-                          onValueChange={(v) =>
-                            setEditState((s) => ({ ...s, role: v as "admin" | "user" }))
-                          }
+                          onValueChange={(v) => setEditState((s) => ({ ...s, role: v as "admin" | "user" }))}
                         >
                           <SelectTrigger className="h-8 w-28 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700 text-sm">
                             <SelectValue />
@@ -453,28 +447,24 @@ export function UserManagement() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                            u.role === "admin"
-                              ? "bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                          }`}
-                        >
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          u.role === "admin"
+                            ? "bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                        }`}>
                           {u.role}
                         </span>
                       )}
                     </TableCell>
 
-                    {/* Password reset */}
+                    {/* Password */}
                     <TableCell>
                       {isEditing ? (
                         <Input
                           type="password"
                           placeholder="Leave blank to keep"
                           value={editState.password}
-                          onChange={(e) =>
-                            setEditState((s) => ({ ...s, password: e.target.value }))
-                          }
+                          onChange={(e) => setEditState((s) => ({ ...s, password: e.target.value }))}
                           className="h-8 w-44 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700 text-sm"
                         />
                       ) : (
@@ -491,51 +481,28 @@ export function UserManagement() {
                       <div className="flex items-center gap-1 justify-end">
                         {isEditing ? (
                           <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                            <Button size="sm" variant="ghost"
                               className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950 cursor-pointer"
-                              disabled={editState.saving}
-                              onClick={() => saveEdit(u.id)}
-                            >
-                              {editState.saving ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Check className="h-4 w-4" />
-                              )}
+                              disabled={editState.saving} onClick={() => saveEdit(u.id)}>
+                              {editState.saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                            <Button size="sm" variant="ghost"
                               className="h-8 w-8 p-0 text-zinc-500 hover:text-zinc-700 cursor-pointer"
-                              disabled={editState.saving}
-                              onClick={cancelEdit}
-                            >
+                              disabled={editState.saving} onClick={cancelEdit}>
                               <X className="h-4 w-4" />
                             </Button>
                           </>
                         ) : (
                           <>
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                            <Button size="sm" variant="ghost"
                               className="h-8 w-8 p-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
-                              onClick={() => startEdit(u)}
-                            >
+                              onClick={() => startEdit(u)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                            <Button size="sm" variant="ghost"
                               className="h-8 w-8 p-0 text-zinc-400 hover:text-red-600 dark:hover:text-red-500 cursor-pointer"
-                              disabled={isDeleting}
-                              onClick={() => handleDelete(u.id)}
-                            >
-                              {isDeleting ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3.5 w-3.5" />
-                              )}
+                              disabled={isDeleting} onClick={() => handleDelete(u.id)}>
+                              {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                             </Button>
                           </>
                         )}

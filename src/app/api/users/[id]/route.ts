@@ -5,6 +5,7 @@ import {
   updateUserRole,
   updateUserPassword,
   updateUserEmail,
+  updateUserUsername,
   updateUserAvatar,
   deleteUser,
   findUserByEmail,
@@ -34,11 +35,12 @@ export async function PATCH(
     const { id } = await params;
     const userId = parseInt(id, 10);
     const body = await request.json();
-    const { email, role, password, avatarUrl } = body as {
+    const { email, role, password, avatarUrl, username } = body as {
       email?: string;
       role?: "admin" | "user";
       password?: string;
       avatarUrl?: string;
+      username?: string;
     };
 
     if (email !== undefined) {
@@ -71,6 +73,10 @@ export async function PATCH(
 
     if (avatarUrl !== undefined) {
       await updateUserAvatar(userId, avatarUrl);
+    }
+
+    if (username !== undefined) {
+      await updateUserUsername(userId, username.trim());
     }
 
     return NextResponse.json({ success: true });

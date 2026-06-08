@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
 
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default async function LoginPage({
@@ -28,6 +29,7 @@ export default async function LoginPage({
     }
 
     let role: "admin" | "user" | null = null;
+    let username: string | null = null;
 
     // Check the hardcoded env-var admin first
     if (
@@ -41,6 +43,7 @@ export default async function LoginPage({
         const dbUser = await findUserByEmail(email);
         if (dbUser && (await bcrypt.compare(password, dbUser.password_hash))) {
           role = dbUser.role;
+          username = dbUser.username ?? null;
         }
       } catch {
         // If DB is unavailable, fall through to invalid credentials
@@ -51,7 +54,7 @@ export default async function LoginPage({
       redirect("/login?error=Invalid credentials");
     }
 
-    const session = await encrypt({ email, role });
+    const session = await encrypt({ email, role, username });
     const cookieStore = await cookies();
     cookieStore.set("session", session, {
       httpOnly: true,

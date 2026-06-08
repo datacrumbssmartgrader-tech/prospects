@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname.startsWith('/login');
-  const isDashboardPage = pathname.startsWith('/prospects') || pathname.startsWith('/admin');
+  const isDashboardPage = pathname.startsWith('/prospects') || pathname.startsWith('/admin') || pathname.startsWith('/account');
 
   if (!verifiedSession && isDashboardPage) {
     return NextResponse.redirect(new URL('/login', request.url));

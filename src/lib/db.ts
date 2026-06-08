@@ -9,6 +9,7 @@ function getSql() {
 export type AppUser = {
   id: number;
   email: string;
+  username: string | null;
   password_hash: string;
   role: "admin" | "user";
   avatar_url: string | null;
@@ -26,7 +27,7 @@ export type ResetToken = {
 export async function getUsers(): Promise<Omit<AppUser, "password_hash">[]> {
   const sql = getSql();
   const rows = await sql`
-    SELECT id, email, role, avatar_url, created_at
+    SELECT id, email, username, role, avatar_url, created_at
     FROM users
     ORDER BY created_at DESC
   `;
@@ -36,7 +37,7 @@ export async function getUsers(): Promise<Omit<AppUser, "password_hash">[]> {
 export async function findUserByEmail(email: string): Promise<AppUser | null> {
   const sql = getSql();
   const rows = await sql`
-    SELECT id, email, password_hash, role, avatar_url, created_at
+    SELECT id, email, username, password_hash, role, avatar_url, created_at
     FROM users
     WHERE email = ${email}
     LIMIT 1
@@ -47,7 +48,7 @@ export async function findUserByEmail(email: string): Promise<AppUser | null> {
 export async function findUserById(id: number): Promise<AppUser | null> {
   const sql = getSql();
   const rows = await sql`
-    SELECT id, email, password_hash, role, avatar_url, created_at
+    SELECT id, email, username, password_hash, role, avatar_url, created_at
     FROM users
     WHERE id = ${id}
     LIMIT 1
@@ -59,18 +60,24 @@ export async function createUser(
   email: string,
   passwordHash: string,
   role: "admin" | "user",
-  avatarUrl?: string
+  avatarUrl?: string | null,
+  username?: string | null
 ): Promise<void> {
   const sql = getSql();
   await sql`
-    INSERT INTO users (email, password_hash, role, avatar_url)
-    VALUES (${email}, ${passwordHash}, ${role}, ${avatarUrl ?? null})
+    INSERT INTO users (email, password_hash, role, avatar_url, username)
+    VALUES (${email}, ${passwordHash}, ${role}, ${avatarUrl ?? null}, ${username ?? null})
   `;
 }
 
 export async function updateUserEmail(id: number, email: string): Promise<void> {
   const sql = getSql();
   await sql`UPDATE users SET email = ${email} WHERE id = ${id}`;
+}
+
+export async function updateUserUsername(id: number, username: string): Promise<void> {
+  const sql = getSql();
+  await sql`UPDATE users SET username = ${username} WHERE id = ${id}`;
 }
 
 export async function updateUserRole(id: number, role: "admin" | "user"): Promise<void> {

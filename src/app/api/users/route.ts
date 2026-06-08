@@ -37,11 +37,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { email, password, role, avatarUrl } = body as {
+    const { email, password, role, avatarUrl, username } = body as {
       email: string;
       password: string;
       role: "admin" | "user";
       avatarUrl?: string;
+      username?: string;
     };
 
     if (!email?.trim() || !password || !role) {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    await createUser(email.trim().toLowerCase(), passwordHash, role, avatarUrl);
+    await createUser(email.trim().toLowerCase(), passwordHash, role, avatarUrl, username?.trim() || null);
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

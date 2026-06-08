@@ -15,9 +15,11 @@ export async function POST(request: Request) {
     }
 
     const user = await findUserByEmail(email);
-    // Always return success to prevent email enumeration
     if (!user) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json(
+        { error: "No account found with that email address" },
+        { status: 400 }
+      );
     }
 
     const token = randomBytes(32).toString("hex");

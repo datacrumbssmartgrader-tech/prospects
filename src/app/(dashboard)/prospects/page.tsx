@@ -6,7 +6,7 @@ export default async function ProspectsPage() {
   const cookieStore = await cookies();
   const session = cookieStore.get("session")?.value;
   const payload = await decrypt(session);
-  const currentUser = (payload as any)?.username as string ?? "";
+  const currentUser = ((payload as any)?.username || (payload as any)?.email || "") as string;
 
   return (
     <div className="space-y-6">

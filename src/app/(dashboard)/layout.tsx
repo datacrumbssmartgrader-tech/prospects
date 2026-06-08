@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { LogOut, Users, Home } from "lucide-react";
+import { LogOut, Users, Home, UserCircle } from "lucide-react";
 import { decrypt } from "@/lib/auth";
+import { findUserByEmail } from "@/lib/db";
+import { AvatarCircle } from "@/components/ui/avatar-circle";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -15,7 +17,21 @@ export default async function DashboardLayout({
   const session = cookieStore.get("session")?.value;
   const payload = await decrypt(session);
   const email = (payload as any)?.email as string | undefined;
+  const username = (payload as any)?.username as string | null | undefined;
   const role = (payload as any)?.role as string | undefined;
+
+  // Fetch avatar from DB (not stored in JWT)
+  let avatarUrl: string | null = null;
+  if (email) {
+    try {
+      const dbUser = await findUserByEmail(email);
+      avatarUrl = dbUser?.avatar_url ?? null;
+    } catch {
+      // Non-fatal — DB may be unavailable
+    }
+  }
+
+  const displayName = username || email;
 
   async function logout() {
     "use server";
@@ -67,10 +83,17 @@ export default async function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            {email && (
-              <span className="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:block">
-                {email}
-              </span>
+            {/* Avatar + display name → links to account page */}
+            {displayName && (
+              <Link
+                href="/account"
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <AvatarCircle src={avatarUrl} name={displayName} size={28} />
+                <span className="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:block">
+                  {displayName}
+                </span>
+              </Link>
             )}
             <form action={logout}>
               <Button

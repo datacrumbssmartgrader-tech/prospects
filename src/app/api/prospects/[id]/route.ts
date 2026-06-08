@@ -16,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const username = (verified as any).username as string;
+    const username = ((verified as any).username || (verified as any).email || "") as string;
 
     const { id } = await params;
     void id;
