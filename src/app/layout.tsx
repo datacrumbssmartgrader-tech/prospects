@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   title: "Cognos CRM",
   description: "Internal Prospect Management",
   icons: {
-    icon: "/LOGO.webp",
-    apple: "/LOGO.webp",
+    icon: "/LOGO.png",
+    apple: "/LOGO.png",
   },
 };
 
