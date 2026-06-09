@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname.startsWith('/login');
-  const isDashboardPage = pathname.startsWith('/prospects') || pathname.startsWith('/admin') || pathname.startsWith('/account');
+  const isDashboardPage = pathname.startsWith('/prospects') || pathname.startsWith('/admin') || pathname.startsWith('/account') || pathname.startsWith('/duplicates');
 
   if (!verifiedSession && isDashboardPage) {
     return NextResponse.redirect(new URL('/login', request.url));
@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   // Admin-only guard
   if (
     verifiedSession &&
-    pathname.startsWith('/admin') &&
+    (pathname.startsWith('/admin') || pathname.startsWith('/duplicates')) &&
     (verifiedSession as any).role !== "admin"
   ) {
     return NextResponse.redirect(new URL('/prospects', request.url));

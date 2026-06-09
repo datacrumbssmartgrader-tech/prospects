@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { LogOut, Users, Home, UserCircle } from "lucide-react";
+import { LogOut, Users, Home, GitCompare } from "lucide-react";
 import { decrypt } from "@/lib/auth";
 import { findUserByEmail } from "@/lib/db";
 import { AvatarCircle } from "@/components/ui/avatar-circle";
@@ -77,6 +77,18 @@ export default async function DashboardLayout({
                 >
                   <Users className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
                   Accounts
+                </Button>
+              </Link>
+            )}
+            {role === "admin" && (
+              <Link href="/duplicates" className="cursor-pointer">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
+                >
+                  <GitCompare className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
+                  Duplicates
                 </Button>
               </Link>
             )}
