@@ -45,7 +45,10 @@ export default async function DashboardLayout({
       <header className="border-b bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/prospects" className="flex items-center gap-2 cursor-pointer">
+            <Link
+              href="/prospects"
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <Image
                 src="/LOGO.png"
                 alt="Cognos CRM"
@@ -68,6 +71,18 @@ export default async function DashboardLayout({
                 Home
               </Button>
             </Link>
+
+            <Link href="/duplicates" className="cursor-pointer">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
+              >
+                <GitCompare className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
+                Duplicates
+              </Button>
+            </Link>
+
             {role === "admin" && (
               <Link href="/admin" className="cursor-pointer">
                 <Button
@@ -80,16 +95,6 @@ export default async function DashboardLayout({
                 </Button>
               </Link>
             )}
-            <Link href="/duplicates" className="cursor-pointer">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
-              >
-                <GitCompare className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
-                Duplicates
-              </Button>
-            </Link>
           </div>
 
           <div className="flex items-center gap-3">
