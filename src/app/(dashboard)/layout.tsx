@@ -80,18 +80,16 @@ export default async function DashboardLayout({
                 </Button>
               </Link>
             )}
-            {role === "admin" && (
-              <Link href="/duplicates" className="cursor-pointer">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
-                >
-                  <GitCompare className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
-                  Duplicates
-                </Button>
-              </Link>
-            )}
+            <Link href="/duplicates" className="cursor-pointer">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 font-medium cursor-pointer"
+              >
+                <GitCompare className="w-4 h-4 mr-2 text-zinc-400 dark:text-zinc-500" />
+                Duplicates
+              </Button>
+            </Link>
           </div>
 
           <div className="flex items-center gap-3">

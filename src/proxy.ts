@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   // Admin-only guard
   if (
     verifiedSession &&
-    (pathname.startsWith('/admin') || pathname.startsWith('/duplicates')) &&
+    pathname.startsWith('/admin') &&
     (verifiedSession as any).role !== "admin"
   ) {
     return NextResponse.redirect(new URL('/prospects', request.url));

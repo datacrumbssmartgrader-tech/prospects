@@ -5,21 +5,48 @@ import { fetchAllProspects } from "@/lib/google";
 
 const SOURCE_GID = 991813324;
 
-function normalize(n: string): string {
-  return n.replace(/\D/g, "");
+function normalize(raw: string): string {
+  if (!raw) return "";
+
+  const matches = raw.match(/[+]?[\d\s\-()/]{7,30}/g);
+  if (!matches) return "";
+
+  for (const match of matches) {
+    let num = match.replace(/[\s\-()/]/g, "");
+    num = num.replace(/[^0-9+]/g, "");
+    if (!num) continue;
+
+    let digits = num.replace(/^\+/, "");
+
+    if (digits.startsWith("0") && digits.length === 11) {
+      digits = "92" + digits.slice(1);
+    } else if (digits.length === 10 && digits.startsWith("3")) {
+      digits = "92" + digits;
+    } else if (digits.startsWith("0092")) {
+      digits = digits.slice(2);
+    } else if (digits.startsWith("00")) {
+      digits = digits.slice(2);
+    }
+
+    if (digits.length >= 8 && digits.length <= 15) {
+      return digits;
+    }
+  }
+
+  return "";
 }
 
-async function requireAdmin() {
+async function requireAuth() {
   const cookieStore = await cookies();
   const session = cookieStore.get("session")?.value;
   const verified = await decrypt(session);
-  if (!verified || (verified as any).role !== "admin") return null;
+  if (!verified) return null;
   return verified;
 }
 
 export async function GET() {
   try {
-    const session = await requireAdmin();
+    const session = await requireAuth();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

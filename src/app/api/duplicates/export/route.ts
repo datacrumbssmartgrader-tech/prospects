@@ -3,17 +3,17 @@ import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
 import { addProspect } from "@/lib/google";
 
-async function requireAdmin() {
+async function requireAuth() {
   const cookieStore = await cookies();
   const session = cookieStore.get("session")?.value;
   const verified = await decrypt(session);
-  if (!verified || (verified as any).role !== "admin") return null;
+  if (!verified) return null;
   return verified;
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin();
+    const session = await requireAuth();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
