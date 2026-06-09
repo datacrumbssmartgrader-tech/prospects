@@ -180,6 +180,60 @@ export async function updateProspectField(
   });
 }
 
+export type SourceEntry = {
+  prospectName: string;
+  phoneNumber: string;
+  rowIndex: number;
+};
+
+export async function fetchSourceSheetByGid(gid: number): Promise<SourceEntry[]> {
+  const sheets = getSheetsClient();
+  const rawId = (process.env.GOOGLE_SHEET_ID || "").trim();
+  const spreadsheetId = rawId.includes("/d/")
+    ? rawId.split("/d/")[1].split("/")[0]
+    : rawId;
+
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheetMeta = spreadsheet.data.sheets || [];
+
+  const match = sheetMeta.find((s) => s.properties?.sheetId === gid);
+  if (!match?.properties?.title) {
+    throw new Error(`No sheet found with gid ${gid}`);
+  }
+
+  const title = match.properties.title;
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: title,
+  });
+
+  const rows = response.data.values;
+  if (!rows || rows.length === 0) return [];
+
+  const headers = rows[0] as string[];
+  const nameIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "prospect name");
+  const phoneIdx = headers.findIndex((h) => h?.trim().toLowerCase() === "number");
+
+  if (nameIdx === -1 || phoneIdx === -1) {
+    throw new Error(`Sheet "${title}" is missing required headers: Prospect Name, Number`);
+  }
+
+  const entries: SourceEntry[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+    const paddedRow = [...row];
+    while (paddedRow.length < headers.length) paddedRow.push("");
+    const phoneNumber = paddedRow[phoneIdx] || "";
+    if (!phoneNumber) continue;
+    const prospectName = paddedRow[nameIdx] || "";
+    entries.push({ prospectName, phoneNumber, rowIndex: i + 1 });
+  }
+
+  return entries;
+}
+
 export async function addProspect(
   prospect: Omit<Prospect, "id" | "sourceSheet" | "sheetGid" | "rowIndex" | "comments" | "commentBy">,
   targetSheet?: string

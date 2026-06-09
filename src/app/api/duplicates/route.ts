@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "@/lib/auth";
-import { fetchAllProspects } from "@/lib/google";
+import { fetchAllProspects, fetchSourceSheetByGid } from "@/lib/google";
 
 const SOURCE_GID = 991813324;
 
@@ -51,32 +51,32 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const allProspects = await fetchAllProspects();
+    const [sourceEntries, allProspects] = await Promise.all([
+      fetchSourceSheetByGid(SOURCE_GID),
+      fetchAllProspects(),
+    ]);
 
-    // Build a map of gid → sheet title for debugging
-    const sheetsFound = Array.from(
-      new Map(allProspects.map((p) => [p.sheetGid, p.sourceSheet])).entries()
-    ).map(([gid, title]) => ({ gid, title }));
-
-    const sourceEntries = allProspects.filter((p) => p.sheetGid === SOURCE_GID);
     const otherEntries = allProspects.filter((p) => p.sheetGid !== SOURCE_GID);
 
     const existingNumbers = new Set(
       otherEntries.map((p) => normalize(p.phoneNumber)).filter(Boolean)
     );
 
-    const entries = sourceEntries.map((p) => {
-      const normalizedPhone = normalize(p.phoneNumber);
-      return {
-        prospectName: p.prospectName,
-        phoneNumber: p.phoneNumber,
-        normalizedPhone,
-        rowIndex: p.rowIndex,
-        isDuplicate: normalizedPhone.length > 0 && existingNumbers.has(normalizedPhone),
-      };
-    });
+    const entries = sourceEntries
+      .map((p) => {
+        const normalizedPhone = normalize(p.phoneNumber);
+        if (!normalizedPhone) return null;
+        return {
+          prospectName: p.prospectName,
+          phoneNumber: p.phoneNumber,
+          normalizedPhone,
+          rowIndex: p.rowIndex,
+          isDuplicate: existingNumbers.has(normalizedPhone),
+        };
+      })
+      .filter(Boolean);
 
-    return NextResponse.json({ entries, _debug: { sourceGid: SOURCE_GID, sheetsFound } });
+    return NextResponse.json({ entries });
   } catch (error) {
     console.error("Duplicates check error:", error);
     return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
