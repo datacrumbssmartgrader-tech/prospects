@@ -53,6 +53,11 @@ export async function GET() {
 
     const allProspects = await fetchAllProspects();
 
+    // Build a map of gid → sheet title for debugging
+    const sheetsFound = Array.from(
+      new Map(allProspects.map((p) => [p.sheetGid, p.sourceSheet])).entries()
+    ).map(([gid, title]) => ({ gid, title }));
+
     const sourceEntries = allProspects.filter((p) => p.sheetGid === SOURCE_GID);
     const otherEntries = allProspects.filter((p) => p.sheetGid !== SOURCE_GID);
 
@@ -71,7 +76,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ entries });
+    return NextResponse.json({ entries, _debug: { sourceGid: SOURCE_GID, sheetsFound } });
   } catch (error) {
     console.error("Duplicates check error:", error);
     return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
